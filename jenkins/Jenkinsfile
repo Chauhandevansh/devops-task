@@ -7,9 +7,8 @@ pipeline{
                 git branch: 'dev', url: 'https://github.com/Chauhandevansh/devops-task.git'
             }
         }
-    }
-
-    stage('Install Dependencies & Run Tests') {
+    
+        stage('Install Dependencies & Run Tests') {
             steps {
                 sh 'npm ci'
                 echo "Code Testing"
@@ -17,7 +16,7 @@ pipeline{
             }
         }
     
-    stage('Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     sh """
@@ -30,7 +29,7 @@ pipeline{
             }
         }
 
-    stage('Test Docker Image') {
+        stage('Test Docker Image') {
             steps {
                 script {
                     sh """
@@ -44,30 +43,29 @@ pipeline{
             }
         }
 
-    stage('Push to ECR') {
+        stage('Push to ECR') {
             steps {
                 script {
                     sh "docker push $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
                 }
             }
+        }
+        post {
+            success {
+                echo 'Build succeeded 🎉'
+            }
+            failure {
+                echo 'Build failed ❌'
+            }
+            unstable {
+                echo 'Build unstable ⚠️'
+            }   
+            aborted {
+                echo 'Build was aborted ⏹️'
+            }
+            always {
+                cleanWs()   // cleanup in all cases
+            }
+        }
     }
-    post {
-        success {
-            echo 'Build succeeded 🎉'
-        }
-        failure {
-            echo 'Build failed ❌'
-        }
-        unstable {
-            echo 'Build unstable ⚠️'
-        }   
-        aborted {
-            echo 'Build was aborted ⏹️'
-        }
-        always {
-            cleanWs()   // cleanup in all cases
-        }
-    }
-
-
 }
