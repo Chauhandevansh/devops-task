@@ -50,6 +50,7 @@ pipeline{
                 }
             }
         }
+    }
         post {
             success {
                 echo 'Build succeeded 🎉'
@@ -66,6 +67,5 @@ pipeline{
             always {
                 cleanWs()   // cleanup in all cases
             }
-        }
     }
 }
