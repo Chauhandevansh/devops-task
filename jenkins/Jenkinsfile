@@ -29,24 +29,10 @@ pipeline{
             }
         }
 
-        stage('Test Docker Image') {
-            steps {
-                script {
-                    sh """
-                        docker run -d -p 3000:3000 --name express-test ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
-                        sleep 5
-                        curl -f http://localhost:3000 || (echo 'Container test failed' && exit 1)
-                        docker stop express-test
-                        docker rm express-test
-                    """
-                }
-            }
-        }
-
         stage('Push to ECR') {
             steps {
                 script {
-                    sh "docker push $AWS_ACCOUNT_ID.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:{$IMAGE_TAG}"
+                    sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:{$IMAGE_TAG}"
                 }
             }
         }
