@@ -1,9 +1,6 @@
 pipeline{
     agent any
-    triggers{
-        //Github webhook
-    }
-
+    
     stages {
         stage('Checkout') {
             steps {
