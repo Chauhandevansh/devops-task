@@ -1,0 +1,76 @@
+pipeline{
+    agent any
+    triggers{
+        //Github webhook
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'dev', url: 'https://github.com/Chauhandevansh/devops-task.git'
+            }
+        }
+    }
+
+    stage('Install Dependencies & Run Tests') {
+            steps {
+                sh 'npm ci'
+                echo "Code Testing"
+                sh 'npm test || echo "No tests defined"'
+            }
+        }
+    
+    stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                        aws ecr get-login-password --region $AWS_REGION \
+                        | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO
+
+                        docker build -t $ECR_REPO:$IMAGE_TAG .
+                    """
+                }
+            }
+        }
+
+    stage('Test Docker Image') {
+            steps {
+                script {
+                    sh """
+                        docker run -d -p 3000:3000 --name express-test $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+                        sleep 5
+                        curl -f http://localhost:3000 || (echo 'Container test failed' && exit 1)
+                        docker stop express-test
+                        docker rm express-test
+                    """
+                }
+            }
+        }
+
+    stage('Push to ECR') {
+            steps {
+                script {
+                    sh "docker push $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+                }
+            }
+    }
+    post {
+        success {
+            echo 'Build succeeded 🎉'
+        }
+        failure {
+            echo 'Build failed ❌'
+        }
+        unstable {
+            echo 'Build unstable ⚠️'
+        }   
+        aborted {
+            echo 'Build was aborted ⏹️'
+        }
+        always {
+            cleanWs()   // cleanup in all cases
+        }
+    }
+
+
+}
