@@ -11,7 +11,7 @@ pipeline{
         stage('Install Dependencies & Run Tests') {
             steps {
                 sh 'npm ci'
-                echo "Code Testing"
+                sh 'echo "Code Testing"'
                 sh 'echo "No tests defined"'
             }
         }
@@ -21,7 +21,7 @@ pipeline{
                 script {
                     sh """
                         aws ecr get-login-password --region $AWS_REGION \
-                        | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO
+                        | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO
 
                         docker build -t $ECR_REPO:$IMAGE_TAG .
                     """
@@ -33,7 +33,7 @@ pipeline{
             steps {
                 script {
                     sh """
-                        docker run -d -p 3000:3000 --name express-test $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+                        docker run -d -p 3000:3000 --name express-test $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
                         sleep 5
                         curl -f http://localhost:3000 || (echo 'Container test failed' && exit 1)
                         docker stop express-test
@@ -46,7 +46,7 @@ pipeline{
         stage('Push to ECR') {
             steps {
                 script {
-                    sh "docker push $AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+                    sh "docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
                 }
             }
         }
