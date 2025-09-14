@@ -40,22 +40,28 @@ pipeline{
             steps {
                 script {
                     sh '''
-                        # Update ECS task definition with new image
-                        TASK_DEF=$(aws ecs describe-task-definition \
+                        # Fetch current task definition
+                        aws ecs describe-task-definition \
                             --task-definition ${TASK_FAMILY} \
                             --query taskDefinition \
-                            --output json)
+                            --output json > taskdef.json
 
-                        echo $TASK_DEF | \
-                            jq --arg IMAGE "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}" \
-                            '.containerDefinitions[0].image = $IMAGE |
-                            del(.status,.requiresAttributes,.compatibilities,.taskDefinitionArn,.revision,.registeredAt,.registeredBy)' \
-                            > new-task-def.json
+                        # Remove read-only fields
+                        cat taskdef.json | jq 'del(
+                          .status,
+                          .revision,
+                          .taskDefinitionArn,
+                          .requiresAttributes,
+                          .compatibilities,
+                          .registeredAt,
+                          .registeredBy
+                        )' > new-task-def.json
 
+                        # Register new revision (still uses :latest image)
                         aws ecs register-task-definition \
                             --cli-input-json file://new-task-def.json
 
-                        # Update ECS service to use latest task definition
+                        # Update ECS service to pick the new revision
                         aws ecs update-service \
                             --cluster ${ECS_CLUSTER} \
                             --service ${ECS_SERVICE} \
