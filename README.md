@@ -81,13 +81,14 @@ The pipeline uses **GitHub → Jenkins → AWS ECR → AWS ECS (EC2 launch type)
 ## ⚙️ Setup Instructions
 
 ### 1. Clone Repository
+
 ```bash
-git clone https://github.com/<your-username>/devops-task.git
-cd devops-task
-run npm i
-run npm start
-#Check app will be running on http://localhost:3000
-'''
+   git clone https://github.com/<your-username>/devops-task.git
+   cd devops-task
+   run npm i
+   run npm start
+   ###Check app will be running on http://localhost:3000
+```
 
 ### 2. Dockerisation of code
 
@@ -374,7 +375,7 @@ pipeline{
 ### ADD CD Stage
 
    1. Add below groovy code to your pipeline jenkins/Jenkinfile
-   '''groovy
+   ```groovy
    pipeline{
     agent any
     
@@ -467,7 +468,7 @@ pipeline{
             }
     }
 }
-''' 
+```
 
    2. Add global environment variable
    Environment Variables Needed in Jenkins
