@@ -9,13 +9,13 @@ module "network" {
 
 
 module "ecs_cluster" {
-  source       = "../../modules/ecs-cluster"
+  source       = "../../modules/ECS-cluster"
   project_name = "swayatt"
   environment  = "dev"
 }
 
 module "ecs_service" {
-  source            = "../../modules/ecs-service"
+  source            = "../../modules/ECS-service"
   project_name      = "swayatt"
   environment       = "dev"
   region            = "us-east-1"
