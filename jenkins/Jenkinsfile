@@ -1,41 +1,13 @@
-pipeline {
+pipeline{
     agent any
     
-    environment {
-        TF_DIR = 'terraform/environment/dev'
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'dev', url: 'https://github.com/Chauhandevansh/devops-task.git'
+                git branch: 'main', url: 'https://github.com/Chauhandevansh/devops-task.git'
             }
         }
-
-        stage('Terraform Init') {
-            steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform init -input=false'
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform plan -out=tfplan -input=false'
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform apply -input=false -auto-approve tfplan'
-                }
-            }
-        }
-
+    
         stage('Install Dependencies & Run Tests') {
             steps {
                 sh 'npm ci'
@@ -43,7 +15,7 @@ pipeline {
                 sh 'echo "No tests defined"'
             }
         }
-
+    
         stage('Build Docker Image') {
             steps {
                 script {
@@ -64,12 +36,32 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy to ECS') {
             steps {
                 script {
                     sh '''
-                        # Update ECS service after new task definition revision
+                        # Fetch current task definition
+                        aws ecs describe-task-definition \
+                            --task-definition ${TASK_FAMILY} \
+                            --query taskDefinition \
+                            --output json > taskdef.json
+
+                        # Remove read-only fields
+                        cat taskdef.json | jq 'del(
+                          .status,
+                          .revision,
+                          .taskDefinitionArn,
+                          .requiresAttributes,
+                          .compatibilities,
+                          .registeredAt,
+                          .registeredBy
+                        )' > new-task-def.json
+
+                        # Register new revision (still uses :latest image)
+                        aws ecs register-task-definition \
+                            --cli-input-json file://new-task-def.json
+
+                        # Update ECS service to pick the new revision
                         aws ecs update-service \
                             --cluster ${ECS_CLUSTER} \
                             --service ${ECS_SERVICE} \
@@ -79,16 +71,22 @@ pipeline {
             }
         }
     }
-
-    post {
-        success {
-            echo 'Pipeline succeeded 🎉'
-        }
-        failure {
-            echo 'Pipeline failed ❌'
-        }
-        always {
-            cleanWs()
-        }
+    
+        post {
+            success {
+                echo 'Build succeeded 🎉'
+            }
+            failure {
+                echo 'Build failed ❌'
+            }
+            unstable {
+                echo 'Build unstable ⚠️'
+            }   
+            aborted {
+                echo 'Build was aborted ⏹️'
+            }
+            always {
+                cleanWs()   // cleanup in all cases
+            }
     }
 }
