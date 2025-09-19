@@ -3,7 +3,7 @@ const path = require('path');
 const app = express();
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'BATMAN.jpeg'));
+  res.sendFile(path.join(__dirname, 'logoswayatt.png'));
 });
 
 /* health check for ALB */
